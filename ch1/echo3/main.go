@@ -9,12 +9,17 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
 //!+
 func main() {
-	fmt.Println(strings.Join(os.Args[0:], " "))
+	indexed := make([]string, len(os.Args))
+	for i, arg := range os.Args {
+		indexed[i] = strconv.Itoa(i) + " " + arg
+	}
+	fmt.Println(strings.Join(indexed, "\n"))
 }
 
 //!-
