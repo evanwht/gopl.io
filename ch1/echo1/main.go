@@ -14,7 +14,7 @@ import (
 
 func main() {
 	var s, sep string
-	for i := 1; i < len(os.Args); i++ {
+	for i := 0; i < len(os.Args); i++ {
 		s += sep + os.Args[i]
 		sep = " "
 	}
@@ -22,3 +22,6 @@ func main() {
 }
 
 //!-
+// 1.1 add os.Args[0] to output
+// 1.2 print index and value on separate lines
+// 1.3 experiment with strings.Join for performance
