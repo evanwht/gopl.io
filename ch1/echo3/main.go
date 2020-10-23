@@ -11,15 +11,20 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 //!+
 func main() {
+	start := time.Now()
 	indexed := make([]string, len(os.Args))
 	for i, arg := range os.Args {
 		indexed[i] = strconv.Itoa(i) + " " + arg
 	}
-	fmt.Println(strings.Join(indexed, "\n"))
+	s := strings.Join(indexed, "\n")
+	secs := time.Since(start).Seconds()
+	fmt.Println(s)
+	fmt.Printf("time: %f\n", secs)
 }
 
 //!-
