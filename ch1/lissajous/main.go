@@ -9,6 +9,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"image/gif"
@@ -26,7 +27,7 @@ import (
 
 //!+main
 
-var palette = []color.Color{color.Black, color.RGBA{0x00, 0xff, 0x00, 0xff}}
+var palette = []color.Color{color.White, color.Black, color.RGBA{0x00, 0xff, 0x00, 0xff}, color.RGBA{0xff, 0x00, 0x00, 0xff}, color.RGBA{0x00, 0x00, 0xff, 0xff}}
 
 const (
 	whiteIndex = 0 // first color in palette
@@ -40,18 +41,26 @@ func main() {
 	// Thanks to Randall McPherson for pointing out the omission.
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	if len(os.Args) > 1 && os.Args[1] == "web" {
-		//!+http
-		handler := func(w http.ResponseWriter, r *http.Request) {
-			lissajous(w)
+	if len(os.Args) > 1 {
+		if os.Args[1] == "web" {
+			//!+http
+			handler := func(w http.ResponseWriter, r *http.Request) {
+				lissajous(w)
+			}
+			http.HandleFunc("/", handler)
+			//!-http
+			log.Fatal(http.ListenAndServe("localhost:8000", nil))
+			return
+		} else {
+			f, err := os.Open(os.Args[1])
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "liss: %v\n", err)
+			}
+			lissajous(f)
 		}
-		http.HandleFunc("/", handler)
-		//!-http
-		log.Fatal(http.ListenAndServe("localhost:8000", nil))
-		return
+	} else {
+		lissajous(os.Stdout)
 	}
-	//!+main
-	lissajous(os.Stdout)
 }
 
 func lissajous(out io.Writer) {
@@ -72,13 +81,24 @@ func lissajous(out io.Writer) {
 			x := math.Sin(t)
 			y := math.Sin(t*freq + phase)
 			img.SetColorIndex(size+int(x*size+0.5), size+int(y*size+0.5),
-				blackIndex)
+				uint8(nextColor(t)))
 		}
 		phase += 0.1
 		anim.Delay = append(anim.Delay, delay)
 		anim.Image = append(anim.Image, img)
 	}
 	gif.EncodeAll(out, &anim) // NOTE: ignoring encoding errors
+}
+
+func nextColor(cycle float64) int {
+	return round(cycle)%30/10 + 1
+}
+
+func round(val float64) int {
+	if val < 0 {
+		return int(val - 0.5)
+	}
+	return int(val + 0.5)
 }
 
 //!-main
