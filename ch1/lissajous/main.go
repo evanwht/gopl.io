@@ -51,13 +51,12 @@ func main() {
 			//!-http
 			log.Fatal(http.ListenAndServe("localhost:8000", nil))
 			return
-		} else {
-			f, err := os.Open(os.Args[1])
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "liss: %v\n", err)
-			}
-			lissajous(f)
 		}
+		f, err := os.Open(os.Args[1])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "liss: %v\n", err)
+		}
+		lissajous(f)
 	} else {
 		lissajous(os.Stdout)
 	}
