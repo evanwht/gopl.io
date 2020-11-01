@@ -19,6 +19,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -34,6 +35,24 @@ const (
 	blackIndex = 1 // next color in palette
 )
 
+type lisConfig struct {
+	cycles  float64
+	res     float64
+	sizef   float64
+	size    int
+	nframes int
+	delay   int
+}
+
+var defaultConfig = &lisConfig{
+	cycles:  5,     // number of complete x oscillator revolutions
+	res:     0.001, // angular resolution
+	sizef:   100,   // image canvas covers [-size..+size]
+	size:    100,   // image canvas covers [-size..+size]
+	nframes: 64,    // number of animation frames
+	delay:   8,
+}
+
 func main() {
 	//!-main
 	// The sequence of images is deterministic unless we seed
@@ -45,7 +64,7 @@ func main() {
 		if os.Args[1] == "web" {
 			//!+http
 			handler := func(w http.ResponseWriter, r *http.Request) {
-				lissajous(w)
+				lissajous(w, readConfig(r))
 			}
 			http.HandleFunc("/", handler)
 			//!-http
@@ -56,34 +75,57 @@ func main() {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "liss: %v\n", err)
 		}
-		lissajous(f)
+		lissajous(f, defaultConfig)
 	} else {
-		lissajous(os.Stdout)
+		lissajous(os.Stdout, defaultConfig)
 	}
 }
 
-func lissajous(out io.Writer) {
-	const (
-		cycles  = 5     // number of complete x oscillator revolutions
-		res     = 0.001 // angular resolution
-		size    = 100   // image canvas covers [-size..+size]
-		nframes = 64    // number of animation frames
-		delay   = 8     // delay between frames in 10ms units
-	)
+func readConfig(r *http.Request) *lisConfig {
+	var conf = &lisConfig{
+		cycles:  5,     // number of complete x oscillator revolutions
+		res:     0.001, // angular resolution
+		sizef:   100,   // image canvas covers [-size..+size]
+		size:    100,   // image canvas covers [-size..+size]
+		nframes: 64,    // number of animation frames
+		delay:   8,
+	}
+	keys, ok := r.URL.Query()["cycles"]
+	if ok && len(keys[0]) > 1 {
+		i, err := strconv.Atoi(keys[0])
+		if err != nil {
+			fmt.Printf("Can't parse res query param: %s", err)
+			os.Exit(1)
+		}
+		conf.cycles = float64(i)
+	}
+	keys, ok = r.URL.Query()["res"]
+	if ok && len(keys[0]) > 1 {
+		i, err := strconv.ParseFloat(keys[0], 64)
+		if err != nil {
+			fmt.Printf("Can't parse res query param: %s", err)
+			os.Exit(1)
+		}
+		conf.res = i
+	}
+	return conf
+}
+
+func lissajous(out io.Writer, config *lisConfig) {
 	freq := rand.Float64() * 3.0 // relative frequency of y oscillator
-	anim := gif.GIF{LoopCount: nframes}
+	anim := gif.GIF{LoopCount: config.nframes}
 	phase := 0.0 // phase difference
-	for i := 0; i < nframes; i++ {
-		rect := image.Rect(0, 0, 2*size+1, 2*size+1)
+	for i := 0; i < config.nframes; i++ {
+		rect := image.Rect(0, 0, 2*config.size+1, 2*config.size+1)
 		img := image.NewPaletted(rect, palette)
-		for t := 0.0; t < cycles*2*math.Pi; t += res {
+		for t := 0.0; t < config.cycles*2*math.Pi; t += config.res {
 			x := math.Sin(t)
 			y := math.Sin(t*freq + phase)
-			img.SetColorIndex(size+int(x*size+0.5), size+int(y*size+0.5),
+			img.SetColorIndex(config.size+int(x*config.sizef+0.5), config.size+int(y*config.sizef+0.5),
 				uint8(nextColor(t)))
 		}
 		phase += 0.1
-		anim.Delay = append(anim.Delay, delay)
+		anim.Delay = append(anim.Delay, config.delay)
 		anim.Image = append(anim.Image, img)
 	}
 	gif.EncodeAll(out, &anim) // NOTE: ignoring encoding errors
