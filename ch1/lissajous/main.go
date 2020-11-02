@@ -93,6 +93,7 @@ func readConfig(r *http.Request) *lisConfig {
 	keys, ok := r.URL.Query()["cycles"]
 	if ok && len(keys[0]) > 1 {
 		i, err := strconv.Atoi(keys[0])
+
 		if err != nil {
 			fmt.Printf("Can't parse res query param: %s", err)
 			os.Exit(1)
