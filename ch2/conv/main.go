@@ -12,22 +12,23 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/evanwht/gopl.io/ch2/conv/lengthconv"
+	"gopl.io/ch2/conv/lengthconv"
+	"gopl.io/ch2/conv/weightconv"
 	"gopl.io/ch2/tempconv"
 )
 
 func main() {
-	if len(os.Args) <= 2 {
+	if len(os.Args) <= 1 {
 		fmt.Fprintf(os.Stderr, "Too few args. Must declare type of conversion and at least one number to convert\n")
 		os.Exit(1)
 	}
 	conversion := os.Args[1]
 	switch conversion {
-	case "cf":
+	case "temp":
 		temp(os.Args[2:])
-	case "fi":
+	case "len":
 		length(os.Args[2:])
-	case "pk":
+	case "mass":
 		weight(os.Args[2:])
 	}
 }
@@ -45,11 +46,17 @@ func length(args []string) {
 	}
 }
 
-func feetToInches(feet float64) float64 {
-	return feet * 12
-}
-
 func weight(args []string) {
+	for _, arg := range args {
+		t, err := strconv.ParseFloat(arg, 64)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "conv: %v\n", err)
+			os.Exit(1)
+		}
+		k := weightconv.Kilos(t)
+		p := weightconv.Pounds(t)
+		fmt.Printf("%s = %s, %s = %s\n", k, weightconv.KToP(k), p, weightconv.PToK(p))
+	}
 }
 
 func temp(args []string) {
@@ -66,4 +73,4 @@ func temp(args []string) {
 	}
 }
 
-//!-
+//!
